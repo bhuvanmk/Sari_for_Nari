@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:E_Commerce}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:Bhuvan@123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:teamvelocity4you@gmail.com}
+    password: ${MAIL_PASSWORD:siykurjgrcjydedy}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: false
+
+app:
+  jwt:
+    # 256-bit secret key (HMAC-SHA256)
+    secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLXNhcmVlcy1mb3ItbmFhcmlzLWF1dGgtc2VydmljZS1zaG91bGQtYmUtYXQtbGVhc3QtMjU2LWJpdHMtbG9uZw==}
+    accessTokenExpirationMs: ${JWT_ACCESS_EXPIRATION:3600000} # 1 hour
+    refreshTokenExpirationMs: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
+  otp:
+    expirationMinutes: 10

@@ -1,0 +1,556 @@
+# Sarees For Naris - API Endpoints Documentation
+# Base URL: /api/auth
+# Generated: 2026-07-28
+
+================================================================================
+ENDPOINT: POST /api/auth/register
+DESCRIPTION: Register a new user account (sends OTP for email verification)
+================================================================================
+
+REQUEST:
+  Content-Type: application/json
+  Payload:
+  {
+    "username": "string",      // Required, 3-45 characters
+    "email": "string",         // Required, valid email, max 45 chars
+    "password": "string",      // Required, 6-45 characters
+    "role": "string"           // Required, one of: "ADMIN", "USER", "SELLER" (case-insensitive)
+  }
+
+SUCCESS RESPONSE (200 OK):
+  Content-Type: application/json
+  Payload:
+  {
+    "message": "User registered successfully. Please verify your email with the OTP sent."
+  }
+
+ERROR RESPONSES:
+  400 Bad Request:
+  {
+    "message": "Error: Username is already taken!"
+  }
+  OR
+  {
+    "message": "Error: Email is already in use!"
+  }
+  OR
+  {
+    "message": "Error: Invalid role specified. Allowed values: ADMIN, USER, SELLER"
+  }
+
+  Validation Errors (400):
+  {
+    "message": "Validation failed for fields: username, email, password, role"
+  }
+
+OTP: 6-digit code printed to console/logs for verification
+
+
+================================================================================
+ENDPOINT: POST /api/auth/verify-otp
+DESCRIPTION: Verify OTP for registration or password reset
+================================================================================
+
+REQUEST:
+  Content-Type: application/json
+  Payload:
+  {
+    "email": "string",         // Required, valid email
+    "otpCode": "string",       // Required, 6-digit OTP code
+    "purpose": "string"        // Required, one of: "REGISTRATION", "RESET" (case-insensitive)
+  }
+
+SUCCESS RESPONSE (200 OK) - Registration:
+  {
+    "message": "OTP verified successfully. Your account is now active."
+  }
+
+SUCCESS RESPONSE (200 OK) - Password Reset:
+  {
+    "message": "OTP verified successfully.",
+    "resetToken": "string"     // UUID token for password reset
+  }
+
+ERROR RESPONSES:
+  401 Unauthorized:
+  {
+    "message": "Error: Invalid or expired OTP."
+  }
+
+  Validation Errors (400):
+  {
+    "message": "Validation failed for fields: email, otpCode, purpose"
+  }
+
+
+================================================================================
+ENDPOINT: POST /api/auth/resend-otp
+DESCRIPTION: Resend OTP for registration or password reset
+================================================================================
+
+REQUEST:
+  Content-Type: application/json
+  Payload:
+  {
+    "email": "string",         // Required, valid email
+    "purpose": "string"        // Required, one of: "REGISTRATION", "RESET" (case-insensitive)
+  }
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "message": "OTP resent successfully."
+  }
+
+ERROR RESPONSES:
+  400 Bad Request:
+  {
+    "message": "Error: Email not found."
+  }
+
+  Validation Errors (400):
+  {
+    "message": "Validation failed for fields: email, purpose"
+  }
+
+
+================================================================================
+ENDPOINT: POST /api/auth/login
+DESCRIPTION: Authenticate user and obtain JWT access token + refresh token
+================================================================================
+
+REQUEST:
+  Content-Type: application/json
+  Payload:
+  {
+    "username": "string",      // Required, can be username OR email
+    "password": "string"       // Required
+  }
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "token": "string",           // JWT access token (Bearer)
+    "type": "Bearer",
+    "refreshToken": "string",    // Refresh token
+    "id": "integer",             // User ID
+    "username": "string",        // Username
+    "email": "string",           // Email
+    "role": "string"             // Role: "ADMIN", "USER", or "SELLER"
+  }
+
+ERROR RESPONSES:
+  401 Unauthorized:
+  {
+    "message": "Error: Invalid username or password."
+  }
+
+  403 Forbidden (Unverified account):
+  {
+    "message": "Error: Account is not verified. A new OTP has been sent."
+  }
+  Note: A new registration OTP is automatically sent to the user's email
+
+  Validation Errors (400):
+  {
+    "message": "Validation failed for fields: username, password"
+  }
+
+TOKEN EXPIRATION:
+  - Access Token: 1 hour (3600000 ms)
+  - Refresh Token: 7 days (604800000 ms)
+
+
+================================================================================
+ENDPOINT: POST /api/auth/refresh
+DESCRIPTION: Refresh access token using refresh token
+================================================================================
+
+REQUEST:
+  Content-Type: application/json
+  Payload:
+  {
+    "refreshToken": "string"   // Required, refresh token from login response
+  }
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "accessToken": "string",   // New JWT access token
+    "refreshToken": "string"   // Same refresh token (rotated if implemented)
+  }
+
+ERROR RESPONSES:
+  500 Internal Server Error (RuntimeException):
+  "Refresh token is not in database!"
+
+  Validation Errors (400):
+  {
+    "message": "Validation failed for field: refreshToken"
+  }
+
+
+================================================================================
+ENDPOINT: POST /api/auth/forgot-password
+DESCRIPTION: Request password reset OTP (prevents user enumeration)
+================================================================================
+
+REQUEST:
+  Content-Type: application/json
+  Payload:
+  {
+    "email": "string"          // Required, valid email
+  }
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "message": "If your email is registered, we have sent a reset OTP."
+  }
+  Note: Always returns 200 OK regardless of email existence (security by obscurity)
+
+ERROR RESPONSES:
+  Validation Errors (400):
+  {
+    "message": "Validation failed for field: email"
+  }
+
+
+================================================================================
+ENDPOINT: POST /api/auth/reset-password
+DESCRIPTION: Reset password using OTP code or reset token
+================================================================================
+
+REQUEST:
+  Content-Type: application/json
+  Payload:
+  {
+    "email": "string",         // Required, valid email
+    "otpCode": "string",       // Required, 6-digit OTP code OR UUID reset token
+    "newPassword": "string"    // Required, 6-45 characters
+  }
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "message": "Password has been reset successfully."
+  }
+
+ERROR RESPONSES:
+  401 Unauthorized:
+  {
+    "message": "Error: Invalid or expired reset credentials."
+  }
+
+  Validation Errors (400):
+  {
+    "message": "Validation failed for fields: email, otpCode, newPassword"
+  }
+
+NOTES:
+  - If otpCode length > 10 chars: treated as UUID reset token (from verify-otp with RESET purpose)
+  - If otpCode length <= 10 chars: treated as 6-digit OTP code
+
+
+================================================================================
+ENDPOINT: POST /api/auth/change-password
+DESCRIPTION: Change password for authenticated user (requires JWT auth)
+================================================================================
+
+REQUEST:
+  Headers:
+    Authorization: Bearer <access_token>
+  Content-Type: application/json
+  Payload:
+  {
+    "oldPassword": "string",   // Required, current password
+    "newPassword": "string"    // Required, 6-45 characters
+  }
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "message": "Password changed successfully."
+  }
+
+ERROR RESPONSES:
+  401 Unauthorized:
+  {
+    "message": "Error: Unauthenticated."
+  }
+
+  400 Bad Request:
+  {
+    "message": "Error: Old password does not match."
+  }
+
+  Validation Errors (400):
+  {
+    "message": "Validation failed for fields: oldPassword, newPassword"
+  }
+
+
+================================================================================
+ENDPOINT: POST /api/auth/logout
+DESCRIPTION: Logout user and invalidate refresh token (requires JWT auth)
+================================================================================
+
+REQUEST:
+  Headers:
+    Authorization: Bearer <access_token>
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "message": "Log out successful!"
+  }
+
+ERROR RESPONSES:
+  401 Unauthorized:
+  {
+    "message": "Error: Unauthenticated."
+  }
+
+
+================================================================================
+ENDPOINT: GET /api/auth/me
+DESCRIPTION: Get current authenticated user info (requires JWT auth)
+================================================================================
+
+REQUEST:
+  Headers:
+    Authorization: Bearer <access_token>
+
+SUCCESS RESPONSE (200 OK):
+  {
+    "id": "integer",           // User ID
+    "username": "string",      // Username
+    "email": "string",         // Email
+    "role": "string"           // Role: "ADMIN", "USER", or "SELLER"
+  }
+
+ERROR RESPONSES:
+  401 Unauthorized:
+  {
+    "message": "Error: Unauthenticated."
+  }
+
+
+================================================================================
+DATA TRANSFER OBJECTS (DTOs) - DETAILED SPECIFICATIONS
+================================================================================
+
+1. RegisterRequest
+   {
+     "username": "string",    // @NotBlank, @Size(min=3, max=45)
+     "email": "string",       // @NotBlank, @Size(max=45), @Email
+     "password": "string",    // @NotBlank, @Size(min=6, max=45)
+     "role": "string"         // @NotBlank, values: "ADMIN" | "USER" | "SELLER"
+   }
+
+2. LoginRequest
+   {
+     "username": "string",    // @NotBlank (can be username or email)
+     "password": "string"     // @NotBlank
+   }
+
+3. VerifyOtpRequest
+   {
+     "email": "string",       // @NotBlank, @Email
+     "otpCode": "string",     // @NotBlank
+     "purpose": "string"      // @NotBlank, values: "REGISTRATION" | "RESET"
+   }
+
+4. ResendOtpRequest
+   {
+     "email": "string",       // @NotBlank, @Email
+     "purpose": "string"      // @NotBlank, values: "REGISTRATION" | "RESET"
+   }
+
+5. ForgotPasswordRequest
+   {
+     "email": "string"        // @NotBlank, @Email
+   }
+
+6. ResetPasswordRequest
+   {
+     "email": "string",       // @NotBlank, @Email
+     "otpCode": "string",     // @NotBlank (OTP code or UUID token)
+     "newPassword": "string"  // @NotBlank, @Size(min=6, max=45)
+   }
+
+7. ChangePasswordRequest
+   {
+     "oldPassword": "string", // @NotBlank
+     "newPassword": "string"  // @NotBlank, @Size(min=6, max=45)
+   }
+
+8. TokenRefreshRequest
+   {
+     "refreshToken": "string" // @NotBlank
+   }
+
+9. JwtResponse (Login Response)
+   {
+     "token": "string",       // Access token
+     "type": "Bearer",        // Token type (constant)
+     "refreshToken": "string",
+     "id": "integer",
+     "username": "string",
+     "email": "string",
+     "role": "string"         // "ADMIN" | "USER" | "SELLER"
+   }
+
+10. MessageResponse (Generic Message)
+    {
+      "message": "string"
+    }
+
+11. OTP Verification Response (for RESET purpose)
+    {
+      "message": "string",
+      "resetToken": "string"   // UUID token
+    }
+
+12. Token Refresh Response
+    {
+      "accessToken": "string",
+      "refreshToken": "string"
+    }
+
+13. Current User Response (GET /me)
+    {
+      "id": "integer",
+      "username": "string",
+      "email": "string",
+      "role": "string"
+    }
+
+
+================================================================================
+AUTHENTICATION & AUTHORIZATION
+================================================================================
+
+JWT Token:
+  - Header: Authorization: Bearer <access_token>
+  - Algorithm: HMAC-SHA256
+  - Secret: Configurable via JWT_SECRET env var (256-bit base64 encoded)
+  - Access Token Expiry: 1 hour (3600000 ms)
+  - Refresh Token Expiry: 7 days (604800000 ms)
+
+Roles:
+  - ADMIN: Full access
+  - USER: Standard user
+  - SELLER: Seller privileges
+
+Public Endpoints (no auth required):
+  - POST /api/auth/register
+  - POST /api/auth/verify-otp
+  - POST /api/auth/resend-otp
+  - POST /api/auth/login
+  - POST /api/auth/refresh
+  - POST /api/auth/forgot-password
+  - POST /api/auth/reset-password
+
+Protected Endpoints (require valid JWT):
+  - POST /api/auth/change-password
+  - POST /api/auth/logout
+  - GET /api/auth/me
+
+
+================================================================================
+OTP SPECIFICATIONS
+================================================================================
+
+- Format: 6-digit numeric code (100000-999999)
+- Expiration: 10 minutes (configurable via app.otp.expirationMinutes)
+- Purpose Types: "REGISTRATION", "RESET"
+- Delivery: Printed to console/logs (for development/testing)
+- Storage: OtpVerification entity in database
+- One-time use: Marked as used after successful verification
+
+
+================================================================================
+DATABASE ENTITIES (Reference)
+================================================================================
+
+User:
+  - userId: Integer (PK, auto-generated)
+  - username: String (unique, max 45)
+  - email: String (unique, max 45)
+  - password: String (BCrypt encoded, max 255)
+  - role: Enum (ADMIN, USER, SELLER)
+  - isVerified: Boolean (default false)
+
+OtpVerification:
+  - id: Long (PK)
+  - email: String
+  - otpCode: String (6 digits)
+  - purpose: String (REGISTRATION/RESET)
+  - expiryTime: LocalDateTime
+  - isUsed: Boolean
+
+PasswordResetToken:
+  - id: Long (PK)
+  - user: User (FK)
+  - resetToken: String (UUID)
+  - expiryTime: LocalDateTime (15 mins)
+  - isUsed: Boolean
+
+RefreshToken:
+  - id: Long (PK)
+  - user: User (FK)
+  - refreshToken: String (UUID)
+  - expiryTime: LocalDateTime (7 days)
+
+
+================================================================================
+EXAMPLE cURL COMMANDS
+================================================================================
+
+# Register
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "john_doe", "email": "john@example.com", "password": "password123", "role": "USER"}'
+
+# Verify OTP (Registration)
+curl -X POST http://localhost:8080/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com", "otpCode": "123456", "purpose": "REGISTRATION"}'
+
+# Login
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "john_doe", "password": "password123"}'
+
+# Refresh Token
+curl -X POST http://localhost:8080/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken": "<refresh_token_from_login>"}'
+
+# Get Current User
+curl -X GET http://localhost:8080/api/auth/me \
+  -H "Authorization: Bearer <access_token>"
+
+# Change Password
+curl -X POST http://localhost:8080/api/auth/change-password \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"oldPassword": "password123", "newPassword": "newpassword456"}'
+
+# Forgot Password
+curl -X POST http://localhost:8080/api/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com"}'
+
+# Verify OTP (Reset)
+curl -X POST http://localhost:8080/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com", "otpCode": "654321", "purpose": "RESET"}'
+
+# Reset Password (using OTP)
+curl -X POST http://localhost:8080/api/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com", "otpCode": "654321", "newPassword": "newpassword789"}'
+
+# Reset Password (using reset token from verify-otp)
+curl -X POST http://localhost:8080/api/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john@example.com", "otpCode": "<uuid-reset-token>", "newPassword": "newpassword789"}'
+
+# Logout
+curl -X POST http://localhost:8080/api/auth/logout \
+  -H "Authorization: Bearer <access_token>"
