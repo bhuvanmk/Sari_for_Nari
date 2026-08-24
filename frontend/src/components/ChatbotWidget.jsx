@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BASE_URL } from '../services/api';
 import './ChatbotWidget.css';
 
 const INITIAL_GREETING = `Namaste! 👋
@@ -85,7 +86,7 @@ export default function ChatbotWidget() {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      const response = await fetch('http://localhost:8080/api/chat', {
+      const response = await fetch(`${BASE_URL}/chat`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

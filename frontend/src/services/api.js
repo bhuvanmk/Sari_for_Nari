@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:8080/api';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+export const BASE_URL = rawApiUrl.replace(/\/api\/auth\/?$/, '/api').replace(/\/api\/?$/, '') + '/api';
 
 class ApiService {
   getAccessToken() {
