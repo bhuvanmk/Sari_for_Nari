@@ -78,8 +78,9 @@ class ApiService {
 
   // AUTH API
   async login(username, password) {
-    const response = await this.request('/auth/login', {
+    const response = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
     
@@ -97,8 +98,9 @@ class ApiService {
   }
 
   async register(username, email, password, role) {
-    const response = await this.request('/auth/register', {
+    const response = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password, role }),
     });
     const data = await response.json();
@@ -106,13 +108,15 @@ class ApiService {
   }
 
   async verifyOtp(email, otpCode, purpose) {
-    const response = await this.request('/auth/verify-otp', {
+    const response = await fetch(`${BASE_URL}/auth/verify-otp`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otpCode, purpose }),
     });
     const data = await response.json();
     return { ok: response.ok, status: response.status, data };
   }
+
 
   async resendOtp(email, purpose) {
     const response = await this.request('/auth/resend-otp', {
