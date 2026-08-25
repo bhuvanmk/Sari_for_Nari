@@ -119,8 +119,9 @@ class ApiService {
 
 
   async resendOtp(email, purpose) {
-    const response = await this.request('/auth/resend-otp', {
+    const response = await fetch(`${BASE_URL}/auth/resend-otp`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, purpose }),
     });
     const data = await response.json();
@@ -128,8 +129,9 @@ class ApiService {
   }
 
   async forgotPassword(email) {
-    const response = await this.request('/auth/forgot-password', {
+    const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
     const data = await response.json();
@@ -137,13 +139,15 @@ class ApiService {
   }
 
   async resetPassword(email, otpCode, newPassword) {
-    const response = await this.request('/auth/reset-password', {
+    const response = await fetch(`${BASE_URL}/auth/reset-password`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otpCode, newPassword }),
     });
     const data = await response.json();
     return { ok: response.ok, status: response.status, data };
   }
+
 
   async changePassword(oldPassword, newPassword) {
     const response = await this.request('/auth/change-password', {
